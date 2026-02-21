@@ -1,4 +1,4 @@
--- STYRTA OS Updater v1.0
+-- STYRTA OS Updater v2.0
 
 local user = "Ln4022"
 local repo = "StyrtaOS"
@@ -9,6 +9,7 @@ local baseURL = "https://raw.githubusercontent.com/"..user.."/"..repo.."/"..bran
 local files = {
     "startup",
     "system/core.lua",
+    "system/setup.lua",
     "apps/launcher.lua",
     "update.lua",
     "version.txt"
@@ -18,7 +19,14 @@ print("Aktualizacja StyrtaOS...")
 sleep(1)
 
 for i,file in ipairs(files) do
-    print("Pobieranie: "..file)
+    print("Aktualizowanie: "..file)
+
+    -- usuwamy stary plik jesli istnieje
+    if fs.exists(file) then
+        fs.delete(file)
+    end
+
+    -- pobieramy nowy
     shell.run("wget", baseURL..file, file)
 end
 
