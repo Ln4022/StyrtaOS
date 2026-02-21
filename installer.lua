@@ -1,186 +1,40 @@
--- STYRTA OS Launcher v2.0 (Network + SMS + Inbox)
+-- STYRTA OS Installer v2.0
 
--- ===== CONFIG =====
-local file = fs.open("system/config","r")
-local username = file.readLine()
-local pin = file.readLine()
-local theme = tonumber(file.readLine()) or colors.cyan
-file.close()
+local user = "Ln4022"
+local repo = "StyrtaOS"
+local branch = "main"
 
-local w,h = term.getSize()
+local baseURL = "https://raw.githubusercontent.com/"..user.."/"..repo.."/"..branch.."/"
 
--- ===== SIM =====
-local hasSIM = false
-local simNumber = nil
-local simOperator = nil
-local simStatus = nil
+local files = {
+    "startup",
+    "system/core.lua",
+    "apps/launcher.lua",
+    "apps/sms.lua",
+    "apps/inbox.lua",
+    "update.lua",
+    "version.txt"
+}
 
-if fs.exists("system/sim.dat") then
-    local simFile = fs.open("system/sim.dat","r")
-    simNumber = simFile.readLine()
-    simOperator = simFile.readLine()
-    simStatus = simFile.readLine()
-    simFile.close()
+print("Instalacja StyrtaOS...")
+sleep(1)
 
-    if simStatus == "active" then
-        hasSIM = true
-    end
-end
+if not fs.exists("system") then fs.makeDir("system") end
+if not fs.exists("apps") then fs.makeDir("apps") end
+if not fs.exists("data") then fs.makeDir("data") end
 
--- ===== NETWORK =====
-local registered = false
-local netOperator = nil
-local netTech = nil
-local netSignal = 0
+for i,file in ipairs(files) do
+    print("Pobieranie: "..file)
 
-local modem = peripheral.find("modem")
-if modem then
-    rednet.open(peripheral.getName(modem))
-end
-
-if hasSIM and modem then
-    rednet.broadcast({
-        type = "register",
-        number = simNumber
-    }, "styrta_net")
-
-    local id, response = rednet.receive("styrta_net", 3)
-
-    if response and response.status == "OK" then
-        registered = true
-        netOperator = response.operator
-        netTech = response.tech
-        netSignal = response.signal
-    end
-end
-
--- ===== UI =====
-local function formatTime()
-    local time = os.time()
-    local hour = math.floor(time)
-    local min = math.floor((time - hour) * 60)
-
-    if hour < 10 then hour = "0"..hour end
-    if min < 10 then min = "0"..min end
-
-    return hour..":"..min
-end
-
-local function signalBars(level)
-    return string.rep("|", level)
-end
-
-local function drawStatusBar()
-    term.setBackgroundColor(colors.gray)
-    term.setTextColor(colors.black)
-    term.setCursorPos(1,1)
-    term.write(string.rep(" ", w))
-
-    local leftText = "Brak sieci"
-    local rightText = ""
-
-    if registered then
-        leftText = netOperator
-        rightText = netTech.." "..signalBars(netSignal)
+    if fs.exists(file) then
+        fs.delete(file)
     end
 
-    local timeStr = formatTime()
-
-    term.setCursorPos(2,1)
-    term.write(leftText)
-
-    if rightText ~= "" then
-        term.setCursorPos(w - #rightText - 1,1)
-        term.write(rightText)
-    end
-
-    local centerPos = math.floor((w - #timeStr)/2)+1
-    term.setCursorPos(centerPos,1)
-    term.write(timeStr)
+    shell.run("wget", baseURL..file, file)
 end
 
-local function drawButton(x,y,width,height,text,bg)
-    term.setBackgroundColor(bg)
-    for i=0,height-1 do
-        term.setCursorPos(x,y+i)
-        term.write(string.rep(" ",width))
-    end
+print("")
+print("Instalacja zakonczona!")
+sleep(1)
 
-    term.setTextColor(colors.black)
-    term.setCursorPos(x + math.floor((width-#text)/2), y + math.floor(height/2))
-    term.write(text)
-end
-
-local function drawUI()
-    term.setBackgroundColor(colors.black)
-    term.clear()
-    drawStatusBar()
-
-    drawButton(3,4,w-4,3,"SMS",colors.gray)
-    drawButton(3,8,w-4,3,"Inbox",colors.gray)
-    drawButton(3,12,w-4,3,"Restart",colors.red)
-end
-
-local function inside(x,y,bx,by,bw,bh)
-    return x >= bx and x <= bx+bw-1 and y >= by and y <= by+bh-1
-end
-
--- ===== START =====
-drawUI()
-
-while true do
-    local event, p1, p2, p3 = os.pullEvent()
-
-    -- ===== ODBIOR SMS =====
-    if event == "rednet_message" then
-        local message = p2
-
-        if type(message) == "table" and message.type == "sms" then
-
-            if not fs.exists("data") then
-                fs.makeDir("data")
-            end
-
-            local inbox = fs.open("data/inbox.db","a")
-            inbox.writeLine(message.from.."|"..message.text)
-            inbox.close()
-
-            term.setBackgroundColor(colors.black)
-            term.clear()
-            drawStatusBar()
-            term.setCursorPos(2,3)
-
-            print("Nowy SMS zapisany!")
-            print("")
-            print("Od: "..message.from)
-            print("")
-            print("Kliknij aby wrocic")
-
-            os.pullEvent("mouse_click")
-            drawUI()
-        end
-    end
-
-    -- ===== KLIK =====
-    if event == "mouse_click" then
-        local x = p2
-        local y = p3
-
-        -- SMS
-        if inside(x,y,3,4,w-4,3) then
-            shell.run("apps/sms.lua")
-            drawUI()
-        end
-
-        -- Inbox
-        if inside(x,y,3,8,w-4,3) then
-            shell.run("apps/inbox.lua")
-            drawUI()
-        end
-
-        -- Restart
-        if inside(x,y,3,12,w-4,3) then
-            os.reboot()
-        end
-    end
-end
+os.reboot()
