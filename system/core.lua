@@ -1,9 +1,17 @@
--- STYRTA OS Core v1.1 (Lockscreen)
+-- STYRTA OS Core v1.2 (Fixed Lock)
 
 local file = fs.open("system/config","r")
-local username = file.readLine()
-local pin = file.readLine()
-local theme = tonumber(file.readLine())
+
+if not file then
+    print("Brak config!")
+    sleep(2)
+    os.shutdown()
+end
+
+local username = file.readLine() or ""
+local pin = file.readLine() or ""
+local theme = tonumber(file.readLine()) or colors.cyan
+
 file.close()
 
 term.setBackgroundColor(colors.black)
@@ -18,12 +26,10 @@ local function center(y,text,color)
     term.write(text)
 end
 
--- LOCK SCREEN
 local attempts = 0
 local unlocked = false
 
 while not unlocked do
-    term.setBackgroundColor(colors.black)
     term.clear()
 
     center(3,"STYRTA OS",theme)
@@ -35,7 +41,7 @@ while not unlocked do
 
     local input = read("*")
 
-    if input == pin then
+    if input == pin and pin ~= "" then
         unlocked = true
     else
         attempts = attempts + 1
@@ -50,7 +56,6 @@ while not unlocked do
     end
 end
 
--- Po odblokowaniu
 term.clear()
 center(math.floor(h/2),"Odblokowano",colors.lime)
 sleep(1)
