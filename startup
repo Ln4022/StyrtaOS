@@ -1,0 +1,7 @@
+-- STYRTA OS Startup
+
+term.setBackgroundColor(colors.black)
+term.clear()
+term.setCursorPos(1,1)
+
+shell.run("system/core.lua")
