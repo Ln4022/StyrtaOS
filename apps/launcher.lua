@@ -34,7 +34,7 @@ local function drawStatusBar()
 
     if hasSIM then
         leftText = "T-Mobile"
-        rightText = "5G  ||||"
+        rightText = "5G ||||"
     else
         leftText = "Brak sieci"
     end
@@ -51,8 +51,20 @@ local function drawStatusBar()
         term.write(rightText)
     end
 
-    -- SRODEK (po wyczyszczeniu wszystkiego)
-    term.setCursorPos(math.floor((w - #timeStr)/2)+1,1)
+    -- SRODEK (wycentrowany ale z zabezpieczeniem)
+    local centerPos = math.floor((w - #timeStr)/2)+1
+
+    -- jesli srodek nachodzilby na lewa czesc, przesun go
+    if centerPos <= (#leftText + 3) then
+        centerPos = #leftText + 4
+    end
+
+    -- jesli srodek nachodzilby na prawa czesc
+    if rightText ~= "" and (centerPos + #timeStr) >= (w - #rightText - 2) then
+        centerPos = (w - #rightText - 2) - #timeStr
+    end
+
+    term.setCursorPos(centerPos,1)
     term.write(timeStr)
 end
 
