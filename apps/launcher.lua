@@ -27,28 +27,33 @@ local function drawStatusBar()
     term.setBackgroundColor(colors.gray)
     term.setTextColor(colors.black)
     term.setCursorPos(1,1)
-    term.clearLine()
+    term.write(string.rep(" ", w))
 
-    -- Lewa strona
+    local leftText
+    local rightText = ""
+
     if hasSIM then
-        term.setCursorPos(2,1)
-        term.write("T-Mobile")
+        leftText = "T-Mobile"
+        rightText = "5G  ||||"
     else
-        term.setCursorPos(2,1)
-        term.write("Brak sieci")
+        leftText = "Brak sieci"
     end
 
-    -- Srodek (godzina)
     local timeStr = formatTime()
-    term.setCursorPos(math.floor((w-#timeStr)/2)+1,1)
-    term.write(timeStr)
 
-    -- Prawa strona
-    if hasSIM then
-        local signal = "5G  ████"
-        term.setCursorPos(w-#signal-1,1)
-        term.write(signal)
+    -- LEWA STRONA
+    term.setCursorPos(2,1)
+    term.write(leftText)
+
+    -- PRAWA STRONA
+    if rightText ~= "" then
+        term.setCursorPos(w - #rightText - 1,1)
+        term.write(rightText)
     end
+
+    -- SRODEK (po wyczyszczeniu wszystkiego)
+    term.setCursorPos(math.floor((w - #timeStr)/2)+1,1)
+    term.write(timeStr)
 end
 
 local function drawButton(x,y,width,height,text,bg)
