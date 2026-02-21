@@ -1,6 +1,6 @@
 -- STYRTA OS Update Script v2.0
 
-local baseURL = "https://raw.githubusercontent.com/TWOJ_LOGIN/TWOJE_REPO/main/"
+local baseURL = "https://raw.githubusercontent.com/Ln4022/StyrtaOS/main/"
 
 local files = {
     "startup",
