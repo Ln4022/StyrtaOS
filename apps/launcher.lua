@@ -1,4 +1,4 @@
--- STYRTA OS GUI Launcher v1.5 (SIM System)
+-- STYRTA OS GUI Launcher v1.6 (Network Register)
 
 -- Wczytanie config
 local file = fs.open("system/config","r")
@@ -9,7 +9,7 @@ file.close()
 
 local w,h = term.getSize()
 
--- Wczytanie SIM
+-- ===== SIM =====
 local hasSIM = false
 local simNumber = nil
 local simOperator = nil
@@ -27,6 +27,35 @@ if fs.exists("system/sim.dat") then
     end
 end
 
+-- ===== NETWORK =====
+local registered = false
+local netOperator = nil
+local netTech = nil
+local netSignal = 0
+
+-- Otwieramy modem (Pocket ma wbudowany)
+if peripheral.find("modem") then
+    rednet.open(peripheral.getName(peripheral.find("modem")))
+end
+
+-- Rejestracja w sieci
+if hasSIM then
+    rednet.broadcast({
+        type = "register",
+        number = simNumber
+    }, "styrta_net")
+
+    local id, response = rednet.receive("styrta_net", 3)
+
+    if response and response.status == "OK" then
+        registered = true
+        netOperator = response.operator
+        netTech = response.tech
+        netSignal = response.signal
+    end
+end
+
+-- ===== UI =====
 local function formatTime()
     local time = os.time()
     local hour = math.floor(time)
@@ -38,20 +67,22 @@ local function formatTime()
     return hour..":"..min
 end
 
+local function signalBars(level)
+    return string.rep("|", level)
+end
+
 local function drawStatusBar()
     term.setBackgroundColor(colors.gray)
     term.setTextColor(colors.black)
     term.setCursorPos(1,1)
     term.write(string.rep(" ", w))
 
-    local leftText
+    local leftText = "Brak sieci"
     local rightText = ""
 
-    if hasSIM then
-        leftText = simOperator
-        rightText = "5G ||||"
-    else
-        leftText = "Brak sieci"
+    if registered then
+        leftText = netOperator
+        rightText = netTech.." "..signalBars(netSignal)
     end
 
     local timeStr = formatTime()
@@ -68,15 +99,6 @@ local function drawStatusBar()
 
     -- Srodek
     local centerPos = math.floor((w - #timeStr)/2)+1
-
-    if centerPos <= (#leftText + 3) then
-        centerPos = #leftText + 4
-    end
-
-    if rightText ~= "" and (centerPos + #timeStr) >= (w - #rightText - 2) then
-        centerPos = (w - #rightText - 2) - #timeStr
-    end
-
     term.setCursorPos(centerPos,1)
     term.write(timeStr)
 end
@@ -96,12 +118,10 @@ end
 local function drawUI()
     term.setBackgroundColor(colors.black)
     term.clear()
-
     drawStatusBar()
 
     drawButton(3,4,w-4,3,"Informacje",colors.gray)
-    drawButton(3,8,w-4,3,"Ustawienia",colors.gray)
-    drawButton(3,12,w-4,3,"Restart",colors.red)
+    drawButton(3,8,w-4,3,"Restart",colors.red)
 end
 
 local function inside(x,y, bx,by,bw,bh)
@@ -125,10 +145,14 @@ while true do
 
         if hasSIM then
             print("Numer: "..simNumber)
-            print("Operator: "..simOperator)
-            print("Status: "..simStatus)
         else
             print("Brak karty SIM")
+        end
+
+        if registered then
+            print("Zarejestrowano w sieci")
+        else
+            print("Nie zarejestrowano")
         end
 
         print("")
@@ -138,18 +162,6 @@ while true do
     end
 
     if inside(x,y,3,8,w-4,3) then
-        term.setBackgroundColor(colors.black)
-        term.clear()
-        drawStatusBar()
-        term.setCursorPos(2,3)
-        print("Ustawienia (w budowie)")
-        print("")
-        print("Kliknij aby wrocic")
-        os.pullEvent("mouse_click")
-        drawUI()
-    end
-
-    if inside(x,y,3,12,w-4,3) then
         os.reboot()
     end
 end
