@@ -4,13 +4,17 @@ local file = fs.open("system/sim.dat","r")
 local myNumber = file.readLine()
 file.close()
 
-rednet.open(peripheral.getName(peripheral.find("modem")))
+local modem = peripheral.find("modem")
+if modem then
+    rednet.open(peripheral.getName(modem))
+end
 
 term.clear()
 term.setCursorPos(1,1)
 
 print("SMS")
 print("")
+
 write("Numer odbiorcy: ")
 local to = read()
 
