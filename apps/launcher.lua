@@ -1,4 +1,4 @@
--- STYRTA OS GUI Launcher v1.2
+-- STYRTA OS GUI Launcher v1.3
 
 -- Wczytanie config
 local file = fs.open("system/config","r")
@@ -9,12 +9,36 @@ file.close()
 
 local w,h = term.getSize()
 
-local function drawTopBar()
-    term.setBackgroundColor(theme)
+local function formatTime()
+    local time = os.time()
+    local hour = math.floor(time)
+    local min = math.floor((time - hour) * 60)
+
+    if hour < 10 then hour = "0"..hour end
+    if min < 10 then min = "0"..min end
+
+    return hour..":"..min
+end
+
+local function drawStatusBar()
+    term.setBackgroundColor(colors.gray)
     term.setTextColor(colors.black)
     term.setCursorPos(1,1)
     term.clearLine()
-    term.write(" STYRTA OS  |  "..username)
+
+    -- Lewa strona
+    term.setCursorPos(2,1)
+    term.write("Brak SIM")
+
+    -- Srodek (godzina)
+    local timeStr = formatTime()
+    term.setCursorPos(math.floor((w-#timeStr)/2)+1,1)
+    term.write(timeStr)
+
+    -- Prawa strona (zasieg)
+    local signal = "T-Mobile  5G  ████"
+    term.setCursorPos(w-#signal-1,1)
+    term.write(signal)
 end
 
 local function drawButton(x,y,width,height,text,bg)
@@ -33,7 +57,7 @@ local function drawUI()
     term.setBackgroundColor(colors.black)
     term.clear()
 
-    drawTopBar()
+    drawStatusBar()
 
     drawButton(3,4,w-4,3,"Informacje",colors.gray)
     drawButton(3,8,w-4,3,"Ustawienia",colors.gray)
@@ -49,10 +73,10 @@ drawUI()
 while true do
     local event, button, x, y = os.pullEvent("mouse_click")
 
-    -- Informacje
     if inside(x,y,3,4,w-4,3) then
         term.setBackgroundColor(colors.black)
         term.clear()
+        drawStatusBar()
         term.setCursorPos(2,3)
         print("STYRTA OS")
         print("")
@@ -63,10 +87,10 @@ while true do
         drawUI()
     end
 
-    -- Ustawienia (na razie placeholder)
     if inside(x,y,3,8,w-4,3) then
         term.setBackgroundColor(colors.black)
         term.clear()
+        drawStatusBar()
         term.setCursorPos(2,3)
         print("Ustawienia (w budowie)")
         print("")
@@ -75,7 +99,6 @@ while true do
         drawUI()
     end
 
-    -- Restart
     if inside(x,y,3,12,w-4,3) then
         os.reboot()
     end
