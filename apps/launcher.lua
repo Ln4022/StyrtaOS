@@ -1,4 +1,4 @@
--- STYRTA OS GUI Launcher v1.4 (SIM Ready)
+-- STYRTA OS GUI Launcher v1.5 (SIM System)
 
 -- Wczytanie config
 local file = fs.open("system/config","r")
@@ -9,8 +9,23 @@ file.close()
 
 local w,h = term.getSize()
 
--- Sprawdz czy jest karta SIM
-local hasSIM = fs.exists("system/sim.dat")
+-- Wczytanie SIM
+local hasSIM = false
+local simNumber = nil
+local simOperator = nil
+local simStatus = nil
+
+if fs.exists("system/sim.dat") then
+    local simFile = fs.open("system/sim.dat","r")
+    simNumber = simFile.readLine()
+    simOperator = simFile.readLine()
+    simStatus = simFile.readLine()
+    simFile.close()
+
+    if simStatus == "active" then
+        hasSIM = true
+    end
+end
 
 local function formatTime()
     local time = os.time()
@@ -33,7 +48,7 @@ local function drawStatusBar()
     local rightText = ""
 
     if hasSIM then
-        leftText = "T-Mobile"
+        leftText = simOperator
         rightText = "5G ||||"
     else
         leftText = "Brak sieci"
@@ -41,25 +56,23 @@ local function drawStatusBar()
 
     local timeStr = formatTime()
 
-    -- LEWA STRONA
+    -- Lewa
     term.setCursorPos(2,1)
     term.write(leftText)
 
-    -- PRAWA STRONA
+    -- Prawa
     if rightText ~= "" then
         term.setCursorPos(w - #rightText - 1,1)
         term.write(rightText)
     end
 
-    -- SRODEK (wycentrowany ale z zabezpieczeniem)
+    -- Srodek
     local centerPos = math.floor((w - #timeStr)/2)+1
 
-    -- jesli srodek nachodzilby na lewa czesc, przesun go
     if centerPos <= (#leftText + 3) then
         centerPos = #leftText + 4
     end
 
-    -- jesli srodek nachodzilby na prawa czesc
     if rightText ~= "" and (centerPos + #timeStr) >= (w - #rightText - 2) then
         centerPos = (w - #rightText - 2) - #timeStr
     end
@@ -105,9 +118,19 @@ while true do
         term.clear()
         drawStatusBar()
         term.setCursorPos(2,3)
+
         print("STYRTA OS")
         print("")
         print("User: "..username)
+
+        if hasSIM then
+            print("Numer: "..simNumber)
+            print("Operator: "..simOperator)
+            print("Status: "..simStatus)
+        else
+            print("Brak karty SIM")
+        end
+
         print("")
         print("Kliknij aby wrocic")
         os.pullEvent("mouse_click")
