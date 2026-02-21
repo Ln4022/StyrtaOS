@@ -1,6 +1,6 @@
--- STYRTA OS GUI Launcher v1.6 (Network Register)
+-- STYRTA OS Launcher v1.7 (Network + SMS)
 
--- Wczytanie config
+-- ===== CONFIG =====
 local file = fs.open("system/config","r")
 local username = file.readLine()
 local pin = file.readLine()
@@ -33,13 +33,12 @@ local netOperator = nil
 local netTech = nil
 local netSignal = 0
 
--- Otwieramy modem (Pocket ma wbudowany)
-if peripheral.find("modem") then
-    rednet.open(peripheral.getName(peripheral.find("modem")))
+local modem = peripheral.find("modem")
+if modem then
+    rednet.open(peripheral.getName(modem))
 end
 
--- Rejestracja w sieci
-if hasSIM then
+if hasSIM and modem then
     rednet.broadcast({
         type = "register",
         number = simNumber
@@ -55,7 +54,7 @@ if hasSIM then
     end
 end
 
--- ===== UI =====
+-- ===== UI HELPERS =====
 local function formatTime()
     local time = os.time()
     local hour = math.floor(time)
@@ -87,17 +86,14 @@ local function drawStatusBar()
 
     local timeStr = formatTime()
 
-    -- Lewa
     term.setCursorPos(2,1)
     term.write(leftText)
 
-    -- Prawa
     if rightText ~= "" then
         term.setCursorPos(w - #rightText - 1,1)
         term.write(rightText)
     end
 
-    -- Srodek
     local centerPos = math.floor((w - #timeStr)/2)+1
     term.setCursorPos(centerPos,1)
     term.write(timeStr)
@@ -120,48 +116,88 @@ local function drawUI()
     term.clear()
     drawStatusBar()
 
-    drawButton(3,4,w-4,3,"Informacje",colors.gray)
-    drawButton(3,8,w-4,3,"Restart",colors.red)
+    drawButton(3,4,w-4,3,"SMS",colors.gray)
+    drawButton(3,8,w-4,3,"Informacje",colors.gray)
+    drawButton(3,12,w-4,3,"Restart",colors.red)
 end
 
-local function inside(x,y, bx,by,bw,bh)
+local function inside(x,y,bx,by,bw,bh)
     return x >= bx and x <= bx+bw-1 and y >= by and y <= by+bh-1
 end
 
+-- ===== START UI =====
 drawUI()
 
 while true do
-    local event, button, x, y = os.pullEvent("mouse_click")
+    local event, p1, p2, p3 = os.pullEvent()
 
-    if inside(x,y,3,4,w-4,3) then
-        term.setBackgroundColor(colors.black)
-        term.clear()
-        drawStatusBar()
-        term.setCursorPos(2,3)
+    -- ===== ODBIOR SMS =====
+    if event == "rednet_message" then
+        local message = p2
 
-        print("STYRTA OS")
-        print("")
-        print("User: "..username)
+        if type(message) == "table" and message.type == "sms" then
+            term.setBackgroundColor(colors.black)
+            term.clear()
+            drawStatusBar()
+            term.setCursorPos(2,3)
 
-        if hasSIM then
-            print("Numer: "..simNumber)
-        else
-            print("Brak karty SIM")
+            print("Nowy SMS!")
+            print("")
+            print("Od: "..message.from)
+            print("Tresc:")
+            print(message.text)
+            print("")
+            print("Kliknij aby wrocic")
+
+            os.pullEvent("mouse_click")
+            drawUI()
         end
-
-        if registered then
-            print("Zarejestrowano w sieci")
-        else
-            print("Nie zarejestrowano")
-        end
-
-        print("")
-        print("Kliknij aby wrocic")
-        os.pullEvent("mouse_click")
-        drawUI()
     end
 
-    if inside(x,y,3,8,w-4,3) then
-        os.reboot()
+    -- ===== KLIK =====
+    if event == "mouse_click" then
+        local button = p1
+        local x = p2
+        local y = p3
+
+        -- SMS
+        if inside(x,y,3,4,w-4,3) then
+            shell.run("apps/sms.lua")
+            drawUI()
+        end
+
+        -- Informacje
+        if inside(x,y,3,8,w-4,3) then
+            term.setBackgroundColor(colors.black)
+            term.clear()
+            drawStatusBar()
+            term.setCursorPos(2,3)
+
+            print("STYRTA OS")
+            print("")
+            print("User: "..username)
+
+            if hasSIM then
+                print("Numer: "..simNumber)
+            else
+                print("Brak SIM")
+            end
+
+            if registered then
+                print("Zarejestrowano w sieci")
+            else
+                print("Nie zarejestrowano")
+            end
+
+            print("")
+            print("Kliknij aby wrocic")
+            os.pullEvent("mouse_click")
+            drawUI()
+        end
+
+        -- Restart
+        if inside(x,y,3,12,w-4,3) then
+            os.reboot()
+        end
     end
 end
