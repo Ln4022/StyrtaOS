@@ -1,7 +1,15 @@
 -- STYRTA OS Startup
 
-term.setBackgroundColor(colors.black)
-term.clear()
-term.setCursorPos(1,1)
+if not fs.exists("system") then
+    fs.makeDir("system")
+end
 
-shell.run("system/core.lua")
+if not fs.exists("apps") then
+    fs.makeDir("apps")
+end
+
+if not fs.exists("system/config") then
+    shell.run("system/setup.lua")
+else
+    shell.run("system/core.lua")
+end
