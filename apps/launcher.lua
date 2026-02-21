@@ -1,4 +1,4 @@
--- STYRTA OS GUI Launcher v1.3
+-- STYRTA OS GUI Launcher v1.4 (SIM Ready)
 
 -- Wczytanie config
 local file = fs.open("system/config","r")
@@ -8,6 +8,9 @@ local theme = tonumber(file.readLine()) or colors.cyan
 file.close()
 
 local w,h = term.getSize()
+
+-- Sprawdz czy jest karta SIM
+local hasSIM = fs.exists("system/sim.dat")
 
 local function formatTime()
     local time = os.time()
@@ -27,18 +30,25 @@ local function drawStatusBar()
     term.clearLine()
 
     -- Lewa strona
-    term.setCursorPos(2,1)
-    term.write("Brak SIM")
+    if hasSIM then
+        term.setCursorPos(2,1)
+        term.write("T-Mobile")
+    else
+        term.setCursorPos(2,1)
+        term.write("Brak sieci")
+    end
 
     -- Srodek (godzina)
     local timeStr = formatTime()
     term.setCursorPos(math.floor((w-#timeStr)/2)+1,1)
     term.write(timeStr)
 
-    -- Prawa strona (zasieg)
-    local signal = "T-Mobile  5G  ████"
-    term.setCursorPos(w-#signal-1,1)
-    term.write(signal)
+    -- Prawa strona
+    if hasSIM then
+        local signal = "5G  ████"
+        term.setCursorPos(w-#signal-1,1)
+        term.write(signal)
+    end
 end
 
 local function drawButton(x,y,width,height,text,bg)
